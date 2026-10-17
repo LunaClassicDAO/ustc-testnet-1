@@ -1,0 +1,47 @@
+{
+  "chainId": "ustc-testnet-1",
+  "chainName": "USTC Testnet (ustc-testnet-1)",
+  "rpc": "https://35-209-120-74.sslip.io/rpc",
+  "rest": "https://35-209-120-74.sslip.io/lcd",
+  "bip44": {
+    "coinType": 330
+  },
+  "bech32Config": {
+    "bech32PrefixAccAddr": "terra",
+    "bech32PrefixAccPub": "terrapub",
+    "bech32PrefixValAddr": "terravaloper",
+    "bech32PrefixValPub": "terravaloperpub",
+    "bech32PrefixConsAddr": "terravalcons",
+    "bech32PrefixConsPub": "terravalconspub"
+  },
+  "currencies": [
+    {
+      "coinDenom": "LUNC",
+      "coinMinimalDenom": "uluna",
+      "coinDecimals": 6
+    },
+    {
+      "coinDenom": "USTC",
+      "coinMinimalDenom": "uusd",
+      "coinDecimals": 6
+    }
+  ],
+  "feeCurrencies": [
+    {
+      "coinDenom": "LUNC",
+      "coinMinimalDenom": "uluna",
+      "coinDecimals": 6,
+      "gasPriceStep": {
+        "low": 28.325,
+        "average": 28.325,
+        "high": 42.4875
+      }
+    }
+  ],
+  "stakeCurrency": {
+    "coinDenom": "LUNC",
+    "coinMinimalDenom": "uluna",
+    "coinDecimals": 6
+  },
+  "features": []
+}

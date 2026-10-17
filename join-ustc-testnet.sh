@@ -2,23 +2,24 @@
 # Join the USTC staking TESTNET (ustc-testnet-1). Testnet only: tokens have no value.
 # Usage:
 #   MONIKER=my-node bash join-ustc-testnet.sh install     # install terrad, init, genesis, peers, gas price
-#   bash join-ustc-testnet.sh start                       # run the node in the foreground (or use --systemd at install)
+#   bash join-ustc-testnet.sh start                       # run the node in the foreground (skip if installed with SYSTEMD=1)
 #   bash join-ustc-testnet.sh status                      # height + catching_up
 #   KEY=mykey bash join-ustc-testnet.sh create-validator  # after catching_up=false and the key is funded
+#   KEY=mykey bash join-ustc-testnet.sh unjail            # after a downtime jail (600 s) has passed
 # Env: MONIKER, NODE_HOME (default ~/.ustc-testnet), BIN_DIR (default ~/ustc-testnet-bin), KEY (default validator),
 #      KEYRING (default file), SYSTEMD=1 to install a systemd unit (needs sudo), PORT_OFFSET (default 0).
 set -euo pipefail
 
 CHAIN_ID="ustc-testnet-1"
 COMMIT="35d68fe1b3eb811c27e8bf3f398d5cc197897229"
-RELEASE_URL="https://github.com/LunaClassicDAO/ustc-testnet-1/releases/download/v1"
+RELEASE_URL="https://github.com/LunaClassicDAO/ustc-testnet-1/releases/download/v1.1"
 TARBALL="terrad-35d68fe-linux-amd64.tar.gz"
 TARBALL_SHA256="07a26cfbb24c651b6d093d4cb5851f6d4959c4cb288255a97d5b0403c794d558"
 GENESIS_URL="https://35-209-120-74.sslip.io/join/genesis.json"
 GENESIS_SHA256="4c0639a7a8feb7be4a0d3a9b2b2dbef716e57ac412d528bdfd133753c8c1e495"
 PEERS="23c7fe447532302e7a9cce51b1e8e48afda8371f@35.209.120.74:26656"
 MIN_GAS="28.325uluna"
-PUBLIC_RPC="https://35-209-120-74.sslip.io/rpc"
+PUBLIC_RPC="https://35-209-120-74.sslip.io:443/rpc"
 FAUCET="https://35-209-120-74.sslip.io/faucet"
 
 NODE_HOME="${NODE_HOME:-$HOME/.ustc-testnet}"
@@ -103,13 +104,20 @@ UNIT
   fi
   local rpcport=$((26657+PORT_OFFSET))
   say "Done. Node ID: $("$TERRAD" comet show-node-id --home "$NODE_HOME")"
-  echo "Start: ${SYSTEMD:+(already running via systemd) }bash $0 start   |   Status: curl -s localhost:$rpcport/status"
+  if [ "${SYSTEMD:-0}" = "1" ]; then
+    echo "Already running via systemd (sudo systemctl status ustc-testnet). Do NOT also run 'bash $0 start'."
+  else
+    echo "Start: bash $0 start"
+  fi
+  echo "Status: bash $0 status   (wait for \"catching_up\":false before create-validator; a few minutes at the current height)"
   echo "Open TCP $((26656+PORT_OFFSET)) inbound so other nodes can reach you (optional for a validator)."
 }
 
 status() {
   local rpcport=$((26657+PORT_OFFSET))
-  curl -s "localhost:$rpcport/status" | grep -oE '"(latest_block_height|catching_up)":("[0-9]+"|true|false)' || die "node not reachable on $rpcport"
+  local out; out="$(curl -s "localhost:$rpcport/status")" || die "node not reachable on $rpcport"
+  echo "$out" | grep -oE '"(latest_block_height|catching_up)":("[0-9]+"|true|false)' || die "node not reachable on $rpcport"
+  if echo "$out" | grep -q '"catching_up":true'; then echo "Still syncing. Compare with the public height: curl -s $PUBLIC_RPC/status"; fi
 }
 
 create_validator() {
@@ -123,7 +131,7 @@ create_validator() {
   local bal; bal="$("$TERRAD" q bank balance "$addr" uluna --node "$node" -o json 2>/dev/null | grep -oE '"amount":"[0-9]+"' | grep -oE '[0-9]+' || echo 0)"
   local amount="${SELF_BOND:-}"
   if [ -z "$amount" ]; then amount=$(( bal > 20000000 ? bal - 20000000 : 0 )); fi  # keep 20 LUNC for fees
-  [ "$amount" -gt 0 ] || die "$addr has $bal uluna. Fund it first: faucet $FAUCET (100 LUNC) or ask the DAO for a validator grant."
+  [ "$amount" -gt 0 ] || die "$addr has $bal uluna. Fund it first: faucet $FAUCET (50,000 LUNC) or request a validator grant: https://github.com/LunaClassicDAO/ustc-testnet-1/issues"
   local f; f="$(mktemp)"
   cat > "$f" <<JSON
 {"pubkey": $("$TERRAD" comet show-validator --home "$NODE_HOME"),
@@ -134,7 +142,13 @@ JSON
   "$TERRAD" tx staking create-validator "$f" --from "$KEY" --keyring-backend "$KEYRING" --home "$NODE_HOME" \
     --chain-id "$CHAIN_ID" --node "$node" --gas auto --gas-adjustment 1.5 --gas-prices "$MIN_GAS" -y
   rm -f "$f"
-  echo "Check: $TERRAD q staking validator \$($TERRAD keys show $KEY --bech val -a --keyring-backend $KEYRING --home $NODE_HOME) --node $PUBLIC_RPC:443"
+  echo "Check: $TERRAD q staking validator \$($TERRAD keys show $KEY --bech val -a --keyring-backend $KEYRING --home $NODE_HOME) --node $node"
+}
+
+unjail() {
+  local node="tcp://127.0.0.1:$((26657+PORT_OFFSET))"
+  "$TERRAD" tx slashing unjail --from "$KEY" --keyring-backend "$KEYRING" --home "$NODE_HOME" \
+    --chain-id "$CHAIN_ID" --node "$node" --gas auto --gas-adjustment 1.5 --gas-prices "$MIN_GAS" -y
 }
 
 case "${1:-install}" in
@@ -142,5 +156,6 @@ case "${1:-install}" in
   start) exec "$TERRAD" start --home "$NODE_HOME";;
   status) status;;
   create-validator) create_validator;;
-  *) die "usage: $0 install|start|status|create-validator";;
+  unjail) unjail;;
+  *) die "usage: $0 install|start|status|create-validator|unjail";;
 esac
