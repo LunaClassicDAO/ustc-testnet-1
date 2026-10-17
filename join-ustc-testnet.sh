@@ -11,7 +11,7 @@ set -euo pipefail
 
 CHAIN_ID="ustc-testnet-1"
 COMMIT="35d68fe1b3eb811c27e8bf3f398d5cc197897229"
-RELEASE_URL="https://github.com/LunaClassicDAO/v0-lunaclassic-alliance-dashboard-27/releases/download/ustc-testnet-1-v1"
+RELEASE_URL="https://github.com/LunaClassicDAO/ustc-testnet-1/releases/download/v1"
 TARBALL="terrad-35d68fe-linux-amd64.tar.gz"
 TARBALL_SHA256="07a26cfbb24c651b6d093d4cb5851f6d4959c4cb288255a97d5b0403c794d558"
 GENESIS_URL="https://35-209-120-74.sslip.io/join/genesis.json"

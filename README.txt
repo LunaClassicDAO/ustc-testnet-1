@@ -7,5 +7,5 @@ USTC staking TESTNET (ustc-testnet-1) - validator join kit. Testnet only; tokens
   KEY=validator bash join-ustc-testnet.sh create-validator
 Peer: 23c7fe447532302e7a9cce51b1e8e48afda8371f@35.209.120.74:26656   Min gas: 28.325uluna
 RPC https://35-209-120-74.sslip.io/rpc  LCD https://35-209-120-74.sslip.io/lcd  Faucet https://35-209-120-74.sslip.io/faucet
-Binaries: https://github.com/LunaClassicDAO/v0-lunaclassic-alliance-dashboard-27/releases/tag/ustc-testnet-1-v1
+Binaries: https://github.com/LunaClassicDAO/ustc-testnet-1/releases/tag/v1
 Guide: docs/ustc-testnet-validators.md in LunaClassicDAO/v0-lunaclassic-alliance-dashboard-27
